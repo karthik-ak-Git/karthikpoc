@@ -1,5 +1,5 @@
 """
-URL configuration for adson project.
+URL configuration for ads project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -14,15 +14,11 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-# filepath: d:\projects\django-python\autoresume\builder\urls.py
-# filepath: d:\projects\django-python\adson\adson\urls.py
-# filepath: d:\projects\django-python\adson\adson\urls.py
 from django.contrib import admin
-from django.urls import path, include
-from ads import views  # Import your views
+from django.urls import path
+from adss import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('allauth.urls')),  # Include allauth URLs
-    path('',views.index, name='index'),  # Your app's URLs
+    path('', views.index, name='index'),
 ]
