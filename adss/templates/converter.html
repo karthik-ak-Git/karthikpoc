@@ -1,0 +1,496 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<div class="converter-container">
+    <div class="toolbox">
+        <!-- File Upload Section -->
+        <div class="upload-card">
+            <h3><i class="fas fa-file-upload"></i> Upload Image</h3>
+            <div class="drag-drop-area" id="drop-zone">
+                <input type="file" id="image-input" accept="image/*" hidden>
+                <label for="image-input" class="upload-label">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Click or drag to upload image</span>
+                    <span class="file-info" id="file-info">No file selected</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Processing Tools -->
+        <div class="tools-card">
+            <div class="tool-tabs">
+                <button class="tab-btn active" data-tool="adjust">Adjust</button>
+                <button class="tab-btn" data-tool="transform">Transform</button>
+                <button class="tab-btn" data-tool="filters">Filters</button>
+                <button class="tab-btn" data-tool="convert">Convert</button>
+            </div>
+
+            <!-- Adjustment Tools -->
+            <div class="tool-content active" data-tool="adjust">
+                <div class="tool-option">
+                    <label>Brightness</label>
+                    <input type="range" id="brightness" min="0" max="200" value="100" class="slider">
+                    <span class="value-display" id="brightness-value">100%</span>
+                </div>
+                <div class="tool-option">
+                    <label>Contrast</label>
+                    <input type="range" id="contrast" min="0" max="200" value="100" class="slider">
+                    <span class="value-display" id="contrast-value">100%</span>
+                </div>
+                <div class="tool-option">
+                    <label>Saturation</label>
+                    <input type="range" id="saturation" min="0" max="200" value="100" class="slider">
+                    <span class="value-display" id="saturation-value">100%</span>
+                </div>
+                <div class="tool-option">
+                    <label>Sharpness</label>
+                    <input type="range" id="sharpness" min="0" max="200" value="100" class="slider">
+                    <span class="value-display" id="sharpness-value">100%</span>
+                </div>
+            </div>
+
+            <!-- Transform Tools -->
+            <div class="tool-content" data-tool="transform">
+                <div class="tool-option">
+                    <label>Rotation</label>
+                    <div class="rotation-controls">
+                        <button class="btn-rotate" data-degrees="-90"><i class="fas fa-undo"></i></button>
+                        <input type="number" id="rotation-angle" class="rotation-input" value="0" min="0" max="360">
+                        <button class="btn-rotate" data-degrees="90"><i class="fas fa-redo"></i></button>
+                    </div>
+                </div>
+                <div class="tool-option">
+                    <label>Flip</label>
+                    <div class="flip-controls">
+                        <button class="btn-flip" data-axis="x"><i class="fas fa-arrows-alt-h"></i></button>
+                        <button class="btn-flip" data-axis="y"><i class="fas fa-arrows-alt-v"></i></button>
+                    </div>
+                </div>
+                <div class="tool-option">
+                    <label>Reset Transformations</label>
+                    <button class="btn-reset" id="reset-transforms">Reset</button>
+                </div>
+            </div>
+
+            <!-- Filter Tools -->
+            <div class="tool-content" data-tool="filters">
+                <div class="tool-option">
+                    <label>Preset Filters</label>
+                    <select id="preset-filters">
+                        <option value="none">None</option>
+                        <option value="grayscale">Grayscale</option>
+                        <option value="sepia">Sepia</option>
+                        <option value="invert">Invert</option>
+                        <option value="vintage">Vintage</option>
+                    </select>
+                </div>
+                <div class="tool-option">
+                    <label>Color Overlay</label>
+                    <input type="color" id="color-overlay" value="#ffffff">
+                    <input type="range" id="color-intensity" min="0" max="100" value="0">
+                    <span class="value-display" id="color-intensity-value">0%</span>
+                </div>
+            </div>
+
+            <!-- Convert Tools -->
+            <div class="tool-content" data-tool="convert">
+                <div class="tool-option">
+                    <label>Output Format</label>
+                    <select id="download-format">
+                        <option value="jpg">JPG</option>
+                        <option value="png">PNG</option>
+                        <option value="webp">WEBP</option>
+                    </select>
+                </div>
+                <div class="tool-option">
+                    <label>Quality</label>
+                    <input type="range" id="quality" min="1" max="100" value="90">
+                    <span class="value-display" id="quality-value">90%</span>
+                </div>
+            </div>
+
+            <button class="process-btn" id="process-btn">
+                <i class="fas fa-sync-alt"></i> Apply Changes
+            </button>
+        </div>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="preview-card">
+        <div class="preview-container">
+            <div class="image-preview" id="image-preview">
+                <canvas id="preview-canvas"></canvas>
+                <div class="image-meta">
+                    <span id="resolution">Resolution: -</span>
+                    <span id="file-size">Size: -</span>
+                    <span id="file-format">Format: -</span>
+                </div>
+            </div>
+            
+            <div class="download-panel" id="download-panel">
+                <button class="download-btn" id="download-btn">
+                    <i class="fas fa-download"></i> Download Image
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    let originalImage = null;
+    let currentTransforms = {
+        rotation: 0,
+        flipX: 1,
+        flipY: 1,
+        adjustments: {
+            brightness: 100,
+            contrast: 100,
+            saturation: 100,
+            sharpness: 100
+        },
+        filters: {
+            preset: 'none',
+            overlayColor: '#ffffff',
+            overlayIntensity: 0
+        }
+    };
+
+    // Initialize all components
+    initDragDrop();
+    initTabs();
+    initAdjustmentControls();
+    initTransformControls();
+    initFilterControls();
+    initProcessButton();
+    initDownloadButton();
+    initResetButton();
+
+    // Debounced processing for real-time updates
+    const debouncedProcess = debounce(() => processImage(), 300);
+
+    function initDragDrop() {
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('image-input');
+
+        // Drag & Drop Handling
+        const handleFile = (file) => {
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalImage = new Image();
+                    originalImage.onload = () => {
+                        updateImageMeta(file);
+                        processImage();
+                    };
+                    originalImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+
+        dropZone.addEventListener('dragover', (e) => e.preventDefault());
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const files = e.dataTransfer.files;
+            if(files.length) handleFile(files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if(e.target.files.length) handleFile(e.target.files[0]);
+        });
+    }
+
+    function initTabs() {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn, .tool-content').forEach(el => {
+                    el.classList.remove('active');
+                });
+                btn.classList.add('active');
+                document.querySelector(`.tool-content[data-tool="${btn.dataset.tool}"]`).classList.add('active');
+            });
+        });
+    }
+
+    function initAdjustmentControls() {
+        ['brightness', 'contrast', 'saturation', 'sharpness'].forEach(id => {
+            const slider = document.getElementById(id);
+            const display = document.getElementById(`${id}-value`);
+            slider.addEventListener('input', () => {
+                currentTransforms.adjustments[id] = slider.value;
+                display.textContent = `${slider.value}%`;
+                debouncedProcess();
+            });
+        });
+    }
+
+    function initTransformControls() {
+        // Rotation
+        document.querySelectorAll('.btn-rotate').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentTransforms.rotation += parseInt(btn.dataset.degrees);
+                document.getElementById('rotation-angle').value = currentTransforms.rotation % 360;
+                debouncedProcess();
+            });
+        });
+
+        // Flip
+        document.querySelectorAll('.btn-flip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if(btn.dataset.axis === 'x') currentTransforms.flipX *= -1;
+                else currentTransforms.flipY *= -1;
+                debouncedProcess();
+            });
+        });
+    }
+
+    function initFilterControls() {
+        // Preset filters
+        document.getElementById('preset-filters').addEventListener('change', () => {
+            currentTransforms.filters.preset = this.value;
+            debouncedProcess();
+        });
+
+        // Color overlay
+        document.getElementById('color-overlay').addEventListener('input', () => {
+            currentTransforms.filters.overlayColor = this.value;
+            debouncedProcess();
+        });
+
+        document.getElementById('color-intensity').addEventListener('input', () => {
+            currentTransforms.filters.overlayIntensity = this.value;
+            document.getElementById('color-intensity-value').textContent = `${this.value}%`;
+            debouncedProcess();
+        });
+    }
+
+    function initProcessButton() {
+        document.getElementById('process-btn').addEventListener('click', processImage);
+    }
+
+    function initDownloadButton() {
+        document.getElementById('download-btn').addEventListener('click', () => {
+            const canvas = document.getElementById('preview-canvas');
+            const format = document.getElementById('download-format').value;
+            const quality = document.getElementById('quality').value / 100;
+            
+            canvas.toBlob(blob => {
+                const link = document.createElement('a');
+                link.download = `processed-image.${format}`;
+                link.href = URL.createObjectURL(blob);
+                link.click();
+                showToast(`Downloaded: ${link.download}`, 'success');
+            }, `image/${format}`, quality);
+        });
+    }
+
+    function initResetButton() {
+        document.getElementById('reset-transforms').addEventListener('click', () => {
+            currentTransforms = {
+                rotation: 0,
+                flipX: 1,
+                flipY: 1,
+                adjustments: { brightness: 100, contrast: 100, saturation: 100, sharpness: 100 },
+                filters: { preset: 'none', overlayColor: '#ffffff', overlayIntensity: 0 }
+            };
+            
+            // Reset UI elements
+            ['brightness', 'contrast', 'saturation', 'sharpness'].forEach(id => {
+                document.getElementById(id).value = 100;
+                document.getElementById(`${id}-value`).textContent = '100%';
+            });
+            
+            document.getElementById('preset-filters').value = 'none';
+            document.getElementById('color-overlay').value = '#ffffff';
+            document.getElementById('color-intensity').value = 0;
+            document.getElementById('color-intensity-value').textContent = '0%';
+            
+            processImage();
+        });
+    }
+
+    async function processImage() {
+        if (!originalImage) return;
+
+        const canvas = document.getElementById('preview-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Calculate rotated dimensions
+        const rot = currentTransforms.rotation % 360;
+        const width = rot === 90 || rot === 270 ? originalImage.height : originalImage.width;
+        const height = rot === 90 || rot === 270 ? originalImage.width : originalImage.height;
+        
+        canvas.width = width * Math.abs(currentTransforms.flipX);
+        canvas.height = height * Math.abs(currentTransforms.flipY);
+
+        ctx.save();
+        ctx.translate(canvas.width/2, canvas.height/2);
+        ctx.rotate(currentTransforms.rotation * Math.PI/180);
+        ctx.scale(currentTransforms.flipX, currentTransforms.flipY);
+        ctx.translate(-originalImage.width/2, -originalImage.height/2);
+
+        // Apply adjustments
+        ctx.filter = `
+            brightness(${currentTransforms.adjustments.brightness}%)
+            contrast(${currentTransforms.adjustments.contrast}%)
+            saturate(${currentTransforms.adjustments.saturation}%)
+            grayscale(${currentTransforms.filters.preset === 'grayscale' ? 1 : 0})
+            sepia(${currentTransforms.filters.preset === 'sepia' ? 1 : 0})
+            invert(${currentTransforms.filters.preset === 'invert' ? 1 : 0})
+        `;
+
+        ctx.drawImage(originalImage, 0, 0);
+
+        // Apply color overlay
+        if(currentTransforms.filters.overlayIntensity > 0) {
+            ctx.globalCompositeOperation = 'overlay';
+            ctx.fillStyle = currentTransforms.filters.overlayColor;
+            ctx.globalAlpha = currentTransforms.filters.overlayIntensity / 100;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.restore();
+        document.getElementById('download-panel').style.display = 'flex';
+    }
+
+    function updateImageMeta(file) {
+        document.getElementById('file-info').textContent = `${file.name} (${formatBytes(file.size)})`;
+        document.getElementById('file-format').textContent = `Format: ${file.type.split('/')[1].toUpperCase()}`;
+    }
+
+    function formatBytes(bytes) {
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let i = 0;
+        while (bytes >= 1024 && i < units.length - 1) {
+            bytes /= 1024;
+            i++;
+        }
+        return `${bytes.toFixed(2)} ${units[i]}`;
+    }
+
+    function debounce(func, timeout = 300) {
+        let timer;
+        return (...args) => {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), timeout);
+        };
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <span>${message}</span>
+            <i class="fas fa-times close-toast"></i>
+        `;
+        toast.querySelector('.close-toast').addEventListener('click', () => toast.remove());
+        document.getElementById('toast-container').appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+});
+</script>
+
+<style>
+.converter-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.toolbox {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.upload-card, .tools-card, .preview-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.drag-drop-area {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.tool-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 0.8rem;
+    border: none;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.tab-btn.active {
+    background: #3498db;
+    color: white;
+}
+
+.tool-content {
+    display: none;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.tool-content.active {
+    display: flex;
+}
+
+.tool-option {
+    margin-bottom: 1rem;
+}
+
+.slider {
+    width: 100%;
+    margin: 0.5rem 0;
+}
+
+.value-display {
+    float: right;
+    color: #3498db;
+    font-weight: bold;
+}
+
+#preview-canvas {
+    max-width: 100%;
+    max-height: 60vh;
+    border-radius: 8px;
+}
+
+.download-btn {
+    width: 100%;
+    padding: 1rem;
+    background: #2ecc71;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+.toast {
+    /* Add your toast styles here */
+}
+</style>
+{% endblock %}
