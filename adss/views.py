@@ -29,7 +29,7 @@ def register(request):
 def home(request):
     """Display the home dashboard"""
     print("Home view is being called!")  # Add this line
-    recent_uploads = ImageUpload.objects.filter(user=request.user).order_by('-upload_date')[:3]
+    recent_uploads = ImageUpload.objects.filter(user_id=request.user.id).order_by('-upload_date')[:3]
     print(f"Attempting to render: index.html")
     return render(request, 'index.html', {'recent_uploads': recent_uploads})
 # filepath: d:\projects\git\karthikpoc\adss\views.py
