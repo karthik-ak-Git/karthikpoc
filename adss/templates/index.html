@@ -3,6 +3,7 @@
 {% block content %}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7253650347923411"
     crossorigin="anonymous"></script>
+
 <!-- 1z -->
 <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-7253650347923411" data-ad-slot="8478855271"
     data-ad-format="auto" data-full-width-responsive="true"></ins>
@@ -33,7 +34,15 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7253650347923411"
         crossorigin="anonymous"></script>
     <!-- 2z -->
-
+    <div id="cookie-notice" style="display: none; background-color: #f8d7da; padding: 10px; border: 1px solid #f5c6cb;">
+        <p>To view ads on this site, please enable third-party cookies in your browser settings.</p>
+    </div>
+    <script>
+        // Check if third-party cookies are blocked
+        if (navigator.cookieEnabled === false) {
+            document.getElementById('cookie-notice').style.display = 'block';
+        }
+    </script>
     {% if not user.is_authenticated %}
     <div class="auth-buttons">
         <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
